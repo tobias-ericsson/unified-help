@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/tobias-ericsson/unified-help/uh/helpers"
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -44,10 +45,51 @@ to quickly create a Cobra application.`,
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	fmt.Println(os.Args)
+
+	if containsCommandName(rootCmd.Commands(), os.Args[1]) {
+
+		if err := rootCmd.Execute(); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+	} else {
+		if err := helpers.Exec("tldr", os.Args); err != nil {
+			if err := helpers.Exec("man", os.Args); err != nil {
+				if err := rootCmd.Execute(); err != nil {
+					//fmt.Println(err)
+					os.Exit(1)
+				}
+			}
+		}
 	}
+}
+
+func containsCommandName(s []*cobra.Command, command string) bool {
+	for _, a := range s {
+		if a.Name() == command {
+			return true
+		}
+	}
+	return false
+}
+
+func isSubCommand(a string, b []string) bool {
+	for _, v := range b {
+		if a == v {
+			return true
+		}
+	}
+	return false
+}
+
+func Map(vs []string, f func(string) string) []string {
+	vsm := make([]string, len(vs))
+	for i, v := range vs {
+		vsm[i] = f(v)
+	}
+	return vsm
 }
 
 func init() {
